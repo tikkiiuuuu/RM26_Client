@@ -3,7 +3,7 @@
  * @brief 长按 F 的大能量机关交互与状态面板
  */
 
-pragma ComponentBehavior: Bound
+// pragma ComponentBehavior: Bound
 
 import QtQuick 2.15
 

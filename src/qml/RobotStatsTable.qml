@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma ComponentBehavior: Bound
+// pragma ComponentBehavior: Bound
 
 /**
  * RobotStatsTable.qml

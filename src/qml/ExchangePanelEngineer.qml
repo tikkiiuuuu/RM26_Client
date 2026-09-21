@@ -5,7 +5,7 @@
  */
 import QtQuick
 import QtQuick.Layouts
-pragma ComponentBehavior: Bound
+// pragma ComponentBehavior: Bound
 
 Rectangle {
     id: root

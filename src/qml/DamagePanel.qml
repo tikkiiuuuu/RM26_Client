@@ -8,7 +8,7 @@
  * @copyright Copyright (c) 2025 Fudan University EGA Team (复旦大学星云 EGA 机器人战队).
  */
 
-pragma ComponentBehavior: Bound
+// pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
