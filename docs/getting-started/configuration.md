@@ -40,6 +40,29 @@ cp config.example.json config.json
 如果直接使用 `docker compose`，也必须先准备根目录 `config.json`。不要把真实配置写进 Dockerfile、
 镜像参数或可共享的 `.env` 文件；现场变量应只在受控主机上设置。
 
+### 容器内使用自定义控制器串口
+
+控制器经 RS232-USB 转换器接入后是主机上的 `/dev/ttyUSBx`。容器默认看不到该设备，
+`docker-compose.yml` 与 `docker-compose.field.yml` 已为客户端声明设备映射：
+
+```yaml
+devices:
+  - ${RM_CONTROLLER_DEVICE:-/dev/ttyUSB0}:${RM_CONTROLLER_SERIAL:-/dev/ttyUSB0}
+```
+
+现场使用非默认设备名时，用主机与容器两侧一致的两个变量覆盖：
+
+```bash
+# 主机上是 /dev/ttyUSB1，容器内也映射成 /dev/ttyUSB1
+export RM_CONTROLLER_DEVICE=/dev/ttyUSB1
+export RM_CONTROLLER_SERIAL=/dev/ttyUSB1
+export RM_CONTROLLER_BAUD=115200
+./run_docker.sh
+```
+
+设备映射要求容器有权限访问该设备；如果转换器属于特定组，需在主机侧调整权限或组归属，
+不要把容器整体改为 `privileged`。
+
 ## 客户端会到哪里找配置
 
 `ConfigManager` 默认请求 `config.json`，`ConfigLoader` 依次检查：
@@ -78,6 +101,12 @@ cp config.example.json config.json
 | `RM_CLIENT_ROBOT_ID` | `network.client_robot_id` | `1` |
 | `RM_VIDEO_STREAM_URL` | `video.stream_url` | `udp://0.0.0.0:3334` |
 | `RM_HERO_CAMERA_GRID` | `video.industrial_camera_grid` | 未设置，读取 JSON 中的 `false` |
+| `RM_CONTROLLER_LINK` | `controller.enabled` | 未设置，读取 JSON 中的 `false` |
+| `RM_CONTROLLER_SERIAL_ENABLE` | `controller.serial` | 未设置，读取 JSON 中的 `true` |
+| `RM_CONTROLLER_SERIAL` | `controller.serial_port` | 未设置，需在 `config.json` 填写本机设备名 |
+| `RM_CONTROLLER_BAUD` | `controller.baud_rate` | 未设置，读取 JSON 中的 `115200` |
+| `RM_CONTROLLER_LINK_PORT` | `controller.listen_port` | 未设置，读取 JSON 中的 `3340` |
+| `RM_CONTROLLER_FORWARD` | `controller.forward_to_robot` | 未设置，读取 JSON 中的 `true` |
 
 `RM_CLIENT_ROBOT_ID` 与 JSON 字段使用相同范围：红方 `1`–`7`、蓝方 `101`–`107`。其他值会被忽略，
 客户端回到本地配置或安全默认身份，避免界面标签与 MQTT client ID 静默错位。
@@ -133,6 +162,38 @@ JSON 中的 `_comment` 只是给使用者看的说明，客户端不会把它当
 公开模板不附带视频。当前本地视频应交给模拟器转成协议图传，不要把 `default_path` 当作可用的
 桌面播放器入口。使用自己的素材时，仓库内配置只写相对路径；本机临时绝对路径只能留在被忽略
 的 `config.json` 中。
+
+### `controller`
+
+自定义控制器一侧是 RS232（STM32 UART7，115200 8N1），现场通过 RS232-USB 转换器接到客户端
+主机虚拟串口，按裁判系统帧格式发送 `0x0302` 控制帧。客户端解析后可按配置经 MQTT
+`CustomControl` 上行转发给机器人。
+
+| 字段 | 公开示例值 | 代码回退值 | 当前用途 |
+| --- | --- | --- | --- |
+| `enabled` | `false` | `true` | 是否启用控制器链路；示例保持关闭，避免干净克隆误报串口失败 |
+| `serial` | `true` | `true` | 是否使用串口路径；设为 `false` 才回落到 UDP 兼容路径 |
+| `serial_port` | 空字符串 | 空字符串 | 本机串口设备名，如 `/dev/ttyUSB0`、`COM5`、`/dev/ttyACM0` |
+| `baud_rate` | `115200` | `115200` | 与控制器 UART7 一致；改动前必须同步控制器工程 |
+| `listen_port` | `3340` | `3340` | `serial=false` 或串口打开失败时回落的 UDP 兼容端口 |
+| `forward_to_robot` | `true` | `true` | 是否经 MQTT `CustomControl` 把原始控制段上行给机器人 |
+
+`serial_port` 是主机本地设备名，因此公开示例留空。现场值只写入被 Git 忽略的 `config.json`，
+或用 `RM_CONTROLLER_SERIAL` 临时覆盖。串口打开失败时客户端会回落到 `listen_port` 的 UDP 路径，
+便于用联调工具在没有转换器的情况下验证解析链路。
+
+控制帧格式（与控制器发送端字节级一致）：
+
+```text
+SOF(0xA5) | data_length(2, 小端) | seq(1) | CRC8(1)
+| cmd_id(2, 小端, 0x0302) | data(30) | CRC16(2, 小端)
+```
+
+控制段 30 字节布局：`[0..3]` roll、`[4..7]` encoder X、`[8..11]` encoder Y、
+`[12..15]` pitch1、`[16..19]` pitch2、`[20..23]` yaw（均为 `float32` 小端），
+`[24]` mode、`[25]` slow_open、`[26]` slow_close、`[27]` 按键位、`[28..29]` 保留。
+该布局自 2027 赛季起保持不变：机械臂与主控板之间改用 FDCAN 下发 mode/slow_open/slow_close，
+客户端只消费控制段本身，不区分来源。
 
 ### `robots`
 

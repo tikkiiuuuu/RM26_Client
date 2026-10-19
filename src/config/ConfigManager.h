@@ -64,6 +64,15 @@ public:
   QString getVideoResolution() const;
   bool getIndustrialCameraGridEnabled() const; // 工业相机校准网格（默认关闭）
 
+  // --- 自定义控制器链路配置访问器 ---
+  // 控制器经 RS232-USB 转换器接到主机虚拟串口；UDP 仅作为兼容路径保留。
+  bool isCustomControllerLinkEnabled() const;   // 是否启用控制器链路
+  bool isCustomControllerSerialEnabled() const; // 是否使用串口（false 则用 UDP）
+  QString getCustomControllerSerialPort() const; // 串口设备名，如 /dev/ttyUSB0
+  int getCustomControllerBaudRate() const;      // 串口波特率，默认 115200
+  quint16 getCustomControllerLinkPort() const;  // UDP 兼容端口，默认 3340
+  bool isCustomControllerForwardEnabled() const; // 是否经 MQTT 转发控制段
+
   // 机器人配置访问器
   QJsonObject getRobotConfig(const QString &robotType) const;
   QString getRobotLayout(const QString &robotType) const;

@@ -196,6 +196,99 @@ bool ConfigManager::getIndustrialCameraGridEnabled() const {
       .toBool(false);
 }
 
+namespace {
+
+/// 解析 1/true/yes/on 之类的布尔字面量；空串返回 fallback。
+bool parseBooleanLiteral(const QString &raw, bool fallback) {
+  const QString value = raw.trimmed().toLower();
+  if (value.isEmpty()) {
+    return fallback;
+  }
+  if (value == QLatin1String("0") || value == QLatin1String("false") ||
+      value == QLatin1String("no") || value == QLatin1String("off")) {
+    return false;
+  }
+  if (value == QLatin1String("1") || value == QLatin1String("true") ||
+      value == QLatin1String("yes") || value == QLatin1String("on")) {
+    return true;
+  }
+  return fallback;
+}
+
+} // namespace
+
+// --- 自定义控制器链路配置访问器 ---
+
+bool ConfigManager::isCustomControllerLinkEnabled() const {
+  const QString envValue =
+      qEnvironmentVariable("RM_CONTROLLER_LINK").trimmed();
+  if (!envValue.isEmpty()) {
+    return parseBooleanLiteral(envValue, false);
+  }
+  // 现场默认启用：控制器是本项目的主要输入设备，关闭需显式配置。
+  return m_config["controller"].toObject()["enabled"].toBool(true);
+}
+
+bool ConfigManager::isCustomControllerSerialEnabled() const {
+  const QString envValue =
+      qEnvironmentVariable("RM_CONTROLLER_SERIAL_ENABLE").trimmed();
+  if (!envValue.isEmpty()) {
+    return parseBooleanLiteral(envValue, true);
+  }
+  // 默认走串口；显式设置 serial=false 才回落到 UDP 兼容路径。
+  const QJsonValue serialValue =
+      m_config["controller"].toObject()["serial"];
+  if (serialValue.isBool()) {
+    return serialValue.toBool();
+  }
+  return m_config["controller"].toObject()["transport"].toString().trimmed() !=
+         QLatin1String("udp");
+}
+
+QString ConfigManager::getCustomControllerSerialPort() const {
+  return getEnvOrConfigString("RM_CONTROLLER_SERIAL", "controller",
+                              "serial_port", QString());
+}
+
+int ConfigManager::getCustomControllerBaudRate() const {
+  const int defaultBaud = 115200; // 控制器 UART7，见 2027_controller/Core/Src/usart.c
+  bool ok = false;
+  const QByteArray envValue = qgetenv("RM_CONTROLLER_BAUD");
+  if (!envValue.trimmed().isEmpty()) {
+    const int parsed = QString::fromUtf8(envValue).toInt(&ok);
+    if (ok && parsed > 0) {
+      return parsed;
+    }
+    qWarning() << "ConfigManager: 忽略无效的 RM_CONTROLLER_BAUD=" << envValue;
+  }
+
+  const QJsonValue configValue =
+      m_config["controller"].toObject()["baud_rate"];
+  if (configValue.isDouble()) {
+    const int configured = configValue.toInt(defaultBaud);
+    if (configured > 0) {
+      return configured;
+    }
+    qWarning() << "ConfigManager: 忽略无效的 controller.baud_rate="
+               << configured;
+  }
+  return defaultBaud;
+}
+
+quint16 ConfigManager::getCustomControllerLinkPort() const {
+  return getEnvOrConfigPort("RM_CONTROLLER_LINK_PORT", "controller",
+                            "listen_port", 3340);
+}
+
+bool ConfigManager::isCustomControllerForwardEnabled() const {
+  const QString envValue =
+      qEnvironmentVariable("RM_CONTROLLER_FORWARD").trimmed();
+  if (!envValue.isEmpty()) {
+    return parseBooleanLiteral(envValue, true);
+  }
+  return m_config["controller"].toObject()["forward_to_robot"].toBool(true);
+}
+
 // --- 窗口配置访问器 ---
 int ConfigManager::getWindowMinWidth() const {
   return m_config["window"].toObject()["min_width"].toInt(1280);

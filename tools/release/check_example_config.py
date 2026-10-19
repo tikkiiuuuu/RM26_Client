@@ -19,6 +19,7 @@ REQUIRED_ROOT_OBJECTS = (
     "ui_text",
     "network",
     "video",
+    "controller",
     "robots",
     "ar_overlay",
 )
@@ -382,6 +383,55 @@ def _validate_ar(ar_overlay: dict[str, object], issues: list[ConfigIssue]) -> No
     )
 
 
+def _validate_controller(
+    controller: dict[str, object], issues: list[ConfigIssue]
+) -> None:
+    """校验自定义控制器链路配置（RS232-USB 串口 / UDP 兼容路径）。"""
+
+    if not isinstance(controller.get("enabled"), bool):
+        issues.append(
+            ConfigIssue("type:boolean", "controller.enabled", "必须是布尔值")
+        )
+
+    serial = controller.get("serial")
+    if not isinstance(serial, bool):
+        issues.append(
+            ConfigIssue("type:boolean", "controller.serial", "必须是布尔值")
+        )
+
+    # 公开示例不得假定本机设备名，因此允许留空；现场值放在被忽略的 config.json。
+    port = _string(
+        controller, "serial_port", issues, path="controller", allow_empty=True
+    )
+    # 串口设备名是主机本地路径，不做仓库相对路径约束，但拒绝明显的外部 URL。
+    if port is not None and urlsplit(port).scheme in {"http", "https", "tcp", "udp"}:
+        issues.append(
+            ConfigIssue(
+                "controller:serial-url",
+                "controller.serial_port",
+                "必须填写本机串口设备名，而不是网络地址",
+            )
+        )
+
+    _integer(
+        controller, "baud_rate", issues, path="controller", minimum=1, maximum=12000000
+    )
+    _integer(
+        controller,
+        "listen_port",
+        issues,
+        path="controller",
+        minimum=1,
+        maximum=65535,
+    )
+    if not isinstance(controller.get("forward_to_robot"), bool):
+        issues.append(
+            ConfigIssue(
+                "type:boolean", "controller.forward_to_robot", "必须是布尔值"
+            )
+        )
+
+
 def validate_example_config(payload: object) -> tuple[ConfigIssue, ...]:
     """返回示例配置中的全部问题；空元组表示通过。"""
 
@@ -422,6 +472,10 @@ def validate_example_config(payload: object) -> tuple[ConfigIssue, ...]:
     robots = sections.get("robots")
     if robots is not None:
         _validate_robots(robots, issues)
+
+    controller = sections.get("controller")
+    if controller is not None:
+        _validate_controller(controller, issues)
 
     ar_overlay = sections.get("ar_overlay")
     if ar_overlay is not None:

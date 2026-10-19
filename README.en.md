@@ -62,6 +62,7 @@ the reproducible records in the [verification guide](docs/development/verificati
 | Tactical picture | Full-screen map, red/blue perspectives, position and health fusion, stale-data cues |
 | Operator UI | Qt Widgets and QML interface with role-specific layouts and resolution adaptation |
 | Competition links | MQTT, UDP, and Protobuf for state ingestion and competition commands |
+| Controller link | Custom controller `0x0302` over an RS232-USB virtual serial port, optionally forwarded upstream via MQTT |
 | Video pipeline | UDP reassembly, H.264/H.265 decoding, a low-latency-oriented display path, and stream recovery |
 | Event alerts | Visual and audio cues for base, outpost, dart, energy mechanism, and other events |
 | Standalone simulator | FastAPI and Socket.IO web console for match state, commands, and video simulation |

@@ -32,6 +32,11 @@ services:
       RM_VIDEO_STREAM_URL: ${RM_VIDEO_STREAM_URL:-udp://0.0.0.0:3334}
       RM_VIDEO_UDP_RCVBUF_BYTES: ${RM_VIDEO_UDP_RCVBUF_BYTES:-16777216}
       RM_VIDEO_RESET_ON_LOSS_THRESHOLD: ${RM_VIDEO_RESET_ON_LOSS_THRESHOLD:-1}
+      # 自定义控制器经 RS232-USB 接入；设备在容器内路径需与 RM_CONTROLLER_SERIAL 一致。
+      RM_CONTROLLER_LINK: ${RM_CONTROLLER_LINK:-1}
+      RM_CONTROLLER_SERIAL: ${RM_CONTROLLER_SERIAL:-/dev/ttyUSB0}
+      RM_CONTROLLER_BAUD: ${RM_CONTROLLER_BAUD:-115200}
+      RM_CONTROLLER_FORWARD: ${RM_CONTROLLER_FORWARD:-1}
       RM_RUNTIME_LOG_PATH: ${RM_RUNTIME_LOG_PATH:-/opt/rmclient/tmp/log/runtime.log}
       RM_RUNTIME_LOG_STDERR: ${RM_RUNTIME_LOG_STDERR:-0}
     volumes:
@@ -42,5 +47,8 @@ services:
       - ./resources/sounds:/opt/rmclient/build/resources/sounds:ro
       - ./tmp/log:/opt/rmclient/tmp/log
       - ./log:/opt/rmclient/log
+    # 透传 RS232-USB 转换器；主机设备名可用 RM_CONTROLLER_DEVICE 覆盖。
+    devices:
+      - ${RM_CONTROLLER_DEVICE:-/dev/ttyUSB0}:${RM_CONTROLLER_SERIAL:-/dev/ttyUSB0}
     stdin_open: true
     tty: true

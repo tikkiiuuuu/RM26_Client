@@ -167,6 +167,12 @@ target_link_libraries(test_config_manager_video PRIVATE
     Qt6::Core Qt6::Test RoboMasterClientLib)
 rm26_add_qt_test(TestConfigManagerVideo test_config_manager_video)
 
+# 自定义控制器链路测试 (0x0302 over RS232-USB / 兼容 UDP)
+add_executable(test_custom_controller_link unit/test_custom_controller_link.cpp)
+target_link_libraries(test_custom_controller_link PRIVATE
+    Qt6::Core Qt6::Test Qt6::SerialPort RoboMasterClientLib)
+rm26_add_qt_test(TestCustomControllerLink test_custom_controller_link)
+
 # 性能基准测试
 add_executable(test_benchmark benchmark/test_benchmark.cpp)
 target_link_libraries(test_benchmark PRIVATE Qt6::Core Qt6::Test RoboMasterClientLib protobuf::libprotobuf)

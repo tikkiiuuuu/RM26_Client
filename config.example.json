@@ -39,6 +39,15 @@
         "industrial_camera_grid": false,
         "_comment": "stream_url 用于主图传 UDP 监听；工业相机图传复用 MQTT，不需要另设端口"
     },
+    "controller": {
+        "enabled": false,
+        "serial": true,
+        "serial_port": "",
+        "baud_rate": 115200,
+        "listen_port": 3340,
+        "forward_to_robot": true,
+        "_comment": "自定义控制器经 RS232-USB 转换器接到主机虚拟串口，按 0x0302 帧发送；serial_port 留空或写入本机设备名（如 /dev/ttyUSB0、COM5）；serial=false 时回落到 listen_port 的 UDP 兼容路径；forward_to_robot 控制是否经 MQTT CustomControl 转发给机器人"
+    },
     "robots": {
         "infantry": {
             "description": "步兵机器人配置",

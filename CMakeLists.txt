@@ -320,6 +320,8 @@ set(SOURCES
     src/network/MqttManager.cpp
     src/network/MqttLogger.cpp
     src/network/S1ProtocolManager.cpp
+    src/network/CustomControllerLinkPolicy.cpp
+    src/network/CustomControllerReceiver.cpp
     ${PROTO_SRCS}
     src/core/GameData.cpp
     src/core/LogFileNaming.cpp
@@ -368,6 +370,8 @@ set(HEADERS
     src/network/H264AnnexB.h
     src/network/H264StreamRecoveryPolicy.h
     src/network/S1ProtocolManager.h
+    src/network/CustomControllerLinkPolicy.h
+    src/network/CustomControllerReceiver.h
     src/core/GameData.h
     src/core/LogFileNaming.h
     src/core/TimedEventRules.h

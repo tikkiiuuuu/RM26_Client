@@ -45,6 +45,7 @@ class RobotStatusWidget;
 
 #include "../core/GameData.h"
 #include "../network/NetworkManager.h"
+#include "../network/CustomControllerLinkPolicy.h"
 
 // 战术分析前向声明 (指针成员，避免拉入 Q_GADGET 静态链)
 namespace RM {
@@ -71,6 +72,7 @@ class HeroVideoWidget;
 class MqttClient; // MQTT 客户端前向声明
 class ClientDevHooks; // 开发钩子前向声明
 class S1ProtocolManager;   // S1 协议管理器前向声明
+class CustomControllerReceiver; // 自定义控制器链路接收器前向声明
 
 class KillFeedWidget;
 
@@ -395,6 +397,14 @@ private:
   void scheduleOutpostForward();
   void flushOutpostForward();
 
+  // --- 自定义控制器链路 (0x0302 over RS232-USB) ---
+  void startCustomControllerLink(); // 按配置启动串口/UDP 接收
+  void stopCustomControllerLink();
+  void onCustomControllerStateUpdated(// 控制状态更新（日志/诊断）
+      const RM::CustomControllerState &state);
+  void onCustomControllerPayload(// 原始控制段 -> MQTT CustomControl 0x0302
+      const QByteArray &payload);
+
   // --- 成员变量 (C++11 类内初始化) ---
 
   // --- 基础容器 ---
@@ -531,6 +541,8 @@ private:
   QTimer *m_mqttReconnectTimer = nullptr;     // MQTT 首次连接失败后的后台重试定时器
   GameData *m_gameData = nullptr;             // 比赛数据模型单例
   NetworkManager *m_networkManager = nullptr; // 网络通信管理器
+  CustomControllerReceiver *m_customControllerReceiver =
+      nullptr; // 自定义控制器链路接收器 (0x0302)
   RM::TacticalAnalyzer *m_tacticalAnalyzer = nullptr; // 战术分析引擎
   MqttClient *m_mqttClient = nullptr;          // MQTT 客户端（可选，取决于是否找到 Qt6::Mqtt）
   QMediaPlayer *m_bgmPlayer = nullptr;        // 背景音乐播放器

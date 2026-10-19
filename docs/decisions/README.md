@@ -18,6 +18,7 @@
 | [0002](0002-versioned-example-config.md) | accepted | 只跟踪公开示例配置，构建时生成运行副本 |
 | [0003](0003-external-result-animation-assets.md) | accepted | 结算动画使用外部资源目录交付，不整体嵌入 QRC |
 | [0004](0004-optional-audio-pack.md) | accepted | 历史比赛音效作为可选资源包，不恢复来源不明文件 |
+| [0005](0005-custom-controller-rs232-usb-link.md) | accepted | 自定义控制器经 RS232-USB 接入，客户端侧保留 UDP 兼容路径 |
 
 ## 新增 ADR
 

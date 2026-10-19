@@ -57,6 +57,7 @@
 #include "../network/MqttClient.h"
 #include "../simulator/ProtocolSimulator.h"
 #include "../network/S1ProtocolManager.h"
+#include "../network/CustomControllerReceiver.h"
 #include "../widgets/BattleMessageWidget.h"
 // #include "../widgets/KillFeedWidget.h"
 #include "../widgets/CrosshairWidget.h"
@@ -632,7 +633,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   });
 }
 
-MainWindow::~MainWindow() { resetKeyboardMouseControlState(true); }
+MainWindow::~MainWindow() {
+  stopCustomControllerLink();
+  resetKeyboardMouseControlState(true);
+}
 
 void MainWindow::toggleSettingsPanel() {
   qInfo() << "[tactical-login] toggleSettingsPanel"
@@ -1321,6 +1325,30 @@ void MainWindow::setupConnections() {
     connect(m_simulator, &ProtocolSimulator::dataReceived, this,
             &MainWindow::onSimulatorDataReceived);
   }
+
+  // --- 自定义控制器链路 (0x0302 over RS232-USB) ---
+  // 控制器经 RS232-USB 转换器接到主机虚拟串口，帧格式与裁判系统一致。
+  m_customControllerReceiver = new CustomControllerReceiver(this);
+  connect(m_customControllerReceiver,
+          &CustomControllerReceiver::controlStateUpdated, this,
+          &MainWindow::onCustomControllerStateUpdated);
+  connect(m_customControllerReceiver,
+          &CustomControllerReceiver::controlPayloadReceived, this,
+          &MainWindow::onCustomControllerPayload);
+  connect(m_customControllerReceiver, &CustomControllerReceiver::linkStateChanged,
+          this, [this](bool alive) {
+            qInfo().noquote()
+                << QStringLiteral("RM26_CONTROLLER_LINK state=%1 endpoint=%2")
+                       .arg(alive ? QStringLiteral("up") : QStringLiteral("down"))
+                       .arg(m_customControllerReceiver
+                                ? m_customControllerReceiver->endpointDescription()
+                                : QString());
+          });
+  connect(m_customControllerReceiver, &CustomControllerReceiver::errorOccurred,
+          this, [](const QString &message) {
+            qWarning().noquote()
+                << QStringLiteral("RM26_CONTROLLER_LINK error=%1").arg(message);
+          });
 }
 
 // --- 启动服务 ---
@@ -1400,6 +1428,9 @@ void MainWindow::finishServicesStartup(bool mqttModeEnabled) {
   // 视频流启动
   QString videoStreamUrl = ConfigManager::instance().getVideoStreamUrl();
   m_videoBackground->playUrl(videoStreamUrl);
+
+  // 自定义控制器链路启动 (RS232-USB 虚拟串口，0x0302)
+  startCustomControllerLink();
 
   // 启动模拟器
   if (m_simulator) {
@@ -5636,6 +5667,103 @@ void MainWindow::flushOutpostForward() {
              .arg(outpost.maxHP)
              .arg(outpost.status)
              .arg(outpost.isDestroyed ? 1 : 0);
+}
+
+// ============================================================================
+// 自定义控制器链路 (0x0302 over RS232-USB)
+//
+// 合并后链路：
+//   控制器 UART7(TX) --RS232-- RS232-USB 转换器 --USB-- 主机虚拟串口
+// 控制器每 34 ms（约 29 Hz）发送一帧：
+//   SOF(0xA5) | data_length(30) | seq | CRC8 | cmd_id(0x0302) | data(30) | CRC16
+// 客户端解析出控制段后，按配置经 MQTT CustomControl 上行转发给机器人。
+//
+// 注意：2027_controller 起机械臂与主控板改为 FDCAN 交互，0x0302 的字节布局与
+// 命令码保持不变，客户端无需区分数据来源。
+// ============================================================================
+
+void MainWindow::startCustomControllerLink() {
+  if (!m_customControllerReceiver) {
+    return;
+  }
+
+  const ConfigManager &config = ConfigManager::instance();
+  if (!config.isCustomControllerLinkEnabled()) {
+    qInfo().noquote()
+        << QStringLiteral(
+               "[controller-link] disabled (controller.enabled=false; "
+               "可用 RM_CONTROLLER_LINK=1 强制启用)");
+    return;
+  }
+
+  m_customControllerReceiver->setLinkTimeoutMs(500);
+
+  if (config.isCustomControllerSerialEnabled()) {
+    const QString portName = config.getCustomControllerSerialPort();
+    const int baudRate = config.getCustomControllerBaudRate();
+    if (m_customControllerReceiver->startSerial(portName, baudRate)) {
+      qInfo().noquote() << QStringLiteral("[controller-link] serial %1 @ %2 8N1")
+                               .arg(portName)
+                               .arg(baudRate);
+      return;
+    }
+    // 串口打开失败时按配置回落到 UDP 兼容路径，便于现场快速切换。
+    qWarning().noquote()
+        << QStringLiteral(
+               "[controller-link] 串口启动失败，回落到 UDP 兼容路径 port=%1")
+               .arg(config.getCustomControllerLinkPort());
+  }
+
+  const quint16 port = config.getCustomControllerLinkPort();
+  if (!m_customControllerReceiver->startUdp(port)) {
+    qWarning().noquote()
+        << QStringLiteral("[controller-link] UDP 端口 %1 启动失败").arg(port);
+  }
+}
+
+void MainWindow::stopCustomControllerLink() {
+  if (m_customControllerReceiver) {
+    m_customControllerReceiver->stop();
+  }
+}
+
+void MainWindow::onCustomControllerStateUpdated(
+    const RM::CustomControllerState &state) {
+  // 高频（约 30 Hz）控制状态只做限频诊断输出，避免刷屏。
+  static qint64 lastLogMs = 0;
+  const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+  if (nowMs - lastLogMs < 1000) {
+    return;
+  }
+  lastLogMs = nowMs;
+
+  qInfo().noquote()
+      << QStringLiteral(
+             "RM26_CONTROLLER_STATE mode=%1 buttons=0x%2 roll=%3 pitch1=%4 "
+             "pitch2=%5 yaw=%6 enc=%7,%8 slow_open=%9 slow_close=%10")
+             .arg(state.mode)
+             .arg(state.buttons, 2, 16, QLatin1Char('0'))
+             .arg(state.roll, 0, 'f', 3)
+             .arg(state.pitch1, 0, 'f', 3)
+             .arg(state.pitch2, 0, 'f', 3)
+             .arg(state.yaw, 0, 'f', 3)
+             .arg(state.encoderX, 0, 'f', 3)
+             .arg(state.encoderY, 0, 'f', 3)
+             .arg(state.slowOpen)
+             .arg(state.slowClose);
+}
+
+void MainWindow::onCustomControllerPayload(const QByteArray &payload) {
+  if (!ConfigManager::instance().isCustomControllerForwardEnabled()) {
+    return;
+  }
+  if (!m_networkManager || payload.isEmpty()) {
+    return;
+  }
+
+  // 原始 30 字节控制段经 MQTT CustomControl (0x0302) 上行给机器人；
+  // 机器人端自行解释字段，客户端不改变字节布局。
+  m_networkManager->sendData(payload, QHostAddress::LocalHost, 0);
 }
 
 /**
