@@ -34,8 +34,9 @@ float sanitizeFiniteRuneAverage(float value) {
 RobotType robotTypeFromProtocolId(quint32 robotId, quint32 fallbackType) {
   const quint32 normalizedId = robotId % 100;
   switch (normalizedId) {
+  // 2027 规则：1 号槽位为英雄与工程合并后的重装机器人。
   case 1:
-    return RobotType::HERO;
+    return RobotType::HEAVY;
   case 2:
     return RobotType::ENGINEER;
   case 3:
@@ -54,7 +55,7 @@ RobotType robotTypeFromProtocolId(quint32 robotId, quint32 fallbackType) {
 
   switch (fallbackType) {
   case 1:
-    return RobotType::HERO;
+    return RobotType::HEAVY; // 协议 fallback 类型 1 亦按重装处理
   case 2:
     return RobotType::ENGINEER;
   case 3:
@@ -77,8 +78,9 @@ RobotType robotTypeFromProtocolId(quint32 robotId, quint32 fallbackType) {
 }
 
 QList<int> radarRobotOrderForPerspective(bool isBluePerspective) {
-  const QList<int> redOrder{1, 2, 3, 4, 6, 7};
-  const QList<int> blueOrder{101, 102, 103, 104, 106, 107};
+  // 2027 合并后每方 5 台：重装(1)、步兵(3,4)、空中(6)、哨兵(7)。
+  const QList<int> redOrder{1, 3, 4, 6, 7};
+  const QList<int> blueOrder{101, 103, 104, 106, 107};
   return isBluePerspective ? (redOrder + blueOrder) : (blueOrder + redOrder);
 }
 
@@ -145,6 +147,8 @@ QString normalizedSystemMessageColor(const QString &color) {
 }
 float robotShootSpeedLimit(RobotType type) {
   switch (type) {
+  // 重装机器人沿用英雄的 42mm 弹丸射速上限。
+  case RobotType::HEAVY:
   case RobotType::HERO:
     return static_cast<float>(RM::RobotStats::HERO_BULLET_SPEED_LIMIT);
   case RobotType::INFANTRY_3:
@@ -171,6 +175,8 @@ QString robotTabAvatarSource(const RobotData &robot) {
                                     : QStringLiteral("red");
 
   switch (robot.type) {
+  // 重装机器人沿用英雄头像资源。
+  case RobotType::HEAVY:
   case RobotType::HERO:
     return QStringLiteral("qrc:/images/top_robots/%1_teammate_avatar_hero.png")
         .arg(teamPrefix);
@@ -198,6 +204,9 @@ QString robotTabAvatarSource(const RobotData &robot) {
 
 quint16 robotTabDefaultMaxHp(RobotType type) {
   switch (type) {
+  // 重装机器人血量上限取原工程值，便于覆盖合并后的更高耐久。
+  case RobotType::HEAVY:
+    return 250;
   case RobotType::HERO:
     return 200;
   case RobotType::ENGINEER:
@@ -612,14 +621,11 @@ void GameData::initializeRobots() {
     robot.team = TeamColor::RED;
 
     switch (i) {
+    // 2027 规则：英雄与工程合并为唯一的重装机器人，号位 1。
     case 1:
-      robot.type = RobotType::HERO;
-      robot.maxHP = 200;
-      robot.heroRigMode = 0;
-      break;
-    case 2:
-      robot.type = RobotType::ENGINEER;
+      robot.type = RobotType::HEAVY;
       robot.maxHP = 250;
+      robot.heroRigMode = 0;
       break;
     case 3:
       robot.type = RobotType::INFANTRY_3;
@@ -639,6 +645,8 @@ void GameData::initializeRobots() {
       robot.type = RobotType::SENTRY;
       robot.maxHP = 200;
       break;
+    default:
+      continue; // 2 号已被重装吸收，不再单列
     }
 
     // 未收到真实静态状态前，默认按"未知且离线"处理，避免顶部列表预亮。
@@ -675,14 +683,11 @@ void GameData::initializeRobots() {
     robot.team = TeamColor::BLUE;
 
     switch (i) {
+    // 2027 规则：英雄与工程合并为唯一的重装机器人，号位 101。
     case 101:
-      robot.type = RobotType::HERO;
-      robot.maxHP = 200;
-      robot.heroRigMode = 0;
-      break;
-    case 102:
-      robot.type = RobotType::ENGINEER;
+      robot.type = RobotType::HEAVY;
       robot.maxHP = 250;
+      robot.heroRigMode = 0;
       break;
     case 103:
       robot.type = RobotType::INFANTRY_3;
@@ -694,11 +699,6 @@ void GameData::initializeRobots() {
       robot.maxHP = 200;
       robot.infantry17mmMode = 0;
       break;
-    case 105:
-      robot.type = RobotType::INFANTRY_5;
-      robot.maxHP = 200;
-      robot.infantry17mmMode = 0;
-      break;
     case 106:
       robot.type = RobotType::AERIAL;
       robot.maxHP = 250;
@@ -707,6 +707,8 @@ void GameData::initializeRobots() {
       robot.type = RobotType::SENTRY;
       robot.maxHP = 600;
       break;
+    default:
+      continue; // 102 号已被重装吸收，不再单列
     }
 
     // 未收到真实静态状态前，默认按"未知且离线"处理，避免顶部列表预亮。
@@ -745,7 +747,7 @@ RobotType GameData::getRobotTypeById(quint8 robotId) {
   int baseId = robotId % 100;
   switch(baseId){
     case 1:
-      return RobotType::HERO;
+      return RobotType::HEAVY; // 1 号槽位 = 合并后的重装机器人
     case 2:
       return RobotType::ENGINEER;
     case 3:
@@ -866,8 +868,8 @@ void GameData::checkSpeedLimit(RobotData *robot, bool isPenaltyTriggered) {
         robot->type == RobotType::AERIAL ||
         robot->type == RobotType::SENTRY) {
         limit = 25.0f;
-    } else if (robot->type == RobotType::HERO) {
-        // 英雄机器人特殊逻辑：
+    } else if (robot->type == RobotType::HEAVY || robot->type == RobotType::HERO) {
+        // 重装/英雄机器人特殊逻辑（重装沿用英雄 42mm 规则）：
         // 默认 12m/s
         // 远程优先 (heroRigMode==0) + 部署模式 (chassisEnabled==false) -> 16.5m/s
         bool isRangePriority = (robot->heroRigMode == 0);
@@ -892,8 +894,8 @@ void GameData::checkSpeedLimit(RobotData *robot, bool isPenaltyTriggered) {
             int lockTime = 0;
             SpeedLockState newState = SpeedLockState::Normal;
 
-            if (robot->type == RobotType::HERO) {
-                // 英雄机器人 (42mm 弹丸)
+            if (robot->type == RobotType::HEAVY || robot->type == RobotType::HERO) {
+                // 重装/英雄机器人 (42mm 弹丸)
                 bool isDeployment = (v0 > 13.0f);
 
                 if (isDeployment) {
@@ -953,8 +955,8 @@ void GameData::checkHeatLimit(RobotData *robot, bool isPenaltyConfirmed) {
     // 步兵/空中/哨兵 (17mm): Q2 = Limit + 100
     // 英雄 (42mm): Q2 = Limit + 200
     int q2Threshold = robot->heatLimit + 100;
-    if (robot->type == RobotType::HERO) {
-        q2Threshold = robot->heatLimit + 200;
+    if (robot->type == RobotType::HEAVY || robot->type == RobotType::HERO) {
+        q2Threshold = robot->heatLimit + 200; // 42mm 弹丸沿用英雄阈值
     }
 
     if(!robot->shooterPermanentLocked){
@@ -1388,8 +1390,10 @@ QVariantList GameData::getRedRobotsDataQml() const {
 
   auto typeName = [](RobotType t) -> QString {
     switch (t) {
-    case RobotType::HERO: return "英雄";
-    case RobotType::ENGINEER: return "工程";
+    // 2027 规则：英雄与工程合并后的唯一类型统一叫重装。
+    case RobotType::HEAVY: return "重装";
+    case RobotType::HERO:
+    case RobotType::ENGINEER: return "重装";
     case RobotType::INFANTRY_3:
     case RobotType::INFANTRY_4: return "步兵";
     case RobotType::AERIAL: return "空中";
@@ -1444,8 +1448,10 @@ QVariantList GameData::getBlueRobotsDataQml() const {
 
   auto typeName = [](RobotType t) -> QString {
     switch (t) {
-    case RobotType::HERO: return "英雄";
-    case RobotType::ENGINEER: return "工程";
+    // 2027 规则：英雄与工程合并后的唯一类型统一叫重装。
+    case RobotType::HEAVY: return "重装";
+    case RobotType::HERO:
+    case RobotType::ENGINEER: return "重装";
     case RobotType::INFANTRY_3:
     case RobotType::INFANTRY_4:return "步兵";
     case RobotType::AERIAL: return "空中";
@@ -1652,7 +1658,7 @@ void GameData::updateRobotData(const robomaster::RobotStatus &data) {
         //根据id修改对应的type，防止传入的type错误
         switch(id%100){
           case 1:
-              robot->type = RobotType::HERO;
+              robot->type = RobotType::HEAVY; // 1 号 = 合并后的重装机器人
               break;
           case 2:
               robot->type = RobotType::ENGINEER;
@@ -4171,10 +4177,11 @@ void GameData::recordDamageEvent(const DamageEventData &data) {
 }
 
 // 辅助函数：获取机器人名称
+// 2027 规则：英雄与工程合并为唯一的「重装机器人」，号位 1。
 static QString getRobotName(int robotId) {
     int id = (robotId > 100) ? (robotId - 100) : robotId;
     switch (id) {
-        case 1: return "英雄";
+        case 1: return "重装";
         case 2: return "工程";
         case 3: return "步兵3";
         case 4: return "步兵4";

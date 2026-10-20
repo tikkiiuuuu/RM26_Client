@@ -30,7 +30,7 @@ Rectangle {
     signal commonCommandRequested(int commandType, int param)
 
     //---------------------------2.变量（数据）-------------------------
-    // 机器人类型，由 C++ 传入，例如 "R1 - Hero"、"R3 - Standard"
+    // 机器人类型，由 C++ 传入，例如 "R1 - Heavy"、"R3 - Standard"
     property string selectedRobotType: ""
     // gameData 由 MainWindow 注入 QML 上下文，统一在面板入口适配。
     // qmllint disable unqualified
@@ -64,10 +64,11 @@ Rectangle {
                 || selectedRobotType.indexOf("Sentry") >= 0;
     }
 
-    // 逻辑：Hero(R1) 可以买 42mm
+    // 逻辑：Heavy(R1) 可以买 42mm（2027 合并后英雄与工程统一为重装）
     readonly property bool is42mmEnabled: {
         if (selectedRobotType === "") return true;
-        return selectedRobotType.indexOf("Hero") >= 0;
+        return selectedRobotType.indexOf("Heavy") >= 0
+                || selectedRobotType.indexOf("Hero") >= 0;
     }
 
     // 确认弹窗要展示的提示文本

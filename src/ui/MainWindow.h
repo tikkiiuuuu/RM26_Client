@@ -397,6 +397,11 @@ private:
   void scheduleOutpostForward();
   void flushOutpostForward();
 
+  // 2027 规则：重装机器人按 42mm 发射机构解锁状态切换兑换/装配面板。
+  bool shouldUseEngineerExchangePanel() const;
+  void refreshExchangePanelMode(bool forceReload);
+  void refreshExchangePanelAvailability();
+
   // --- 自定义控制器链路 (0x0302 over RS232-USB) ---
   void startCustomControllerLink(); // 按配置启动串口/UDP 接收
   void stopCustomControllerLink();

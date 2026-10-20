@@ -137,20 +137,27 @@ private slots:
         const QVariantList allyRobots = analyzer.allyRobotList();
         const QVariantList enemyRobots = analyzer.enemyRobotList();
 
-        QCOMPARE(allyRobots.size(), 6);
-        QCOMPARE(enemyRobots.size(), 6);
+        // 2027 规则：英雄与工程合并为唯一重装(1)，每方 5 台。
+        QCOMPARE(allyRobots.size(), 5);
+        QCOMPARE(enemyRobots.size(), 5);
 
-        auto containsSlotFive = [](const QVariantList &robots) {
+        auto containsSlot = [](const QVariantList &robots, int slot) {
             for (const QVariant &entry : robots) {
-                if (entry.toMap().value("slot").toInt() == 5) {
+                if (entry.toMap().value("slot").toInt() == slot) {
                     return true;
                 }
             }
             return false;
         };
 
-        QVERIFY(!containsSlotFive(allyRobots));
-        QVERIFY(!containsSlotFive(enemyRobots));
+        // 5 号始终不显示；2 号（原工程）合并后也不再单列。
+        QVERIFY(!containsSlot(allyRobots, 5));
+        QVERIFY(!containsSlot(enemyRobots, 5));
+        QVERIFY(!containsSlot(allyRobots, 2));
+        QVERIFY(!containsSlot(enemyRobots, 2));
+        // 重装(1)仍在列表中，且只有一台。
+        QVERIFY(containsSlot(allyRobots, 1));
+        QVERIFY(containsSlot(enemyRobots, 1));
     }
 
     void testRobotListsDefaultMaxHpToOneHundredFifty() {
@@ -162,8 +169,9 @@ private slots:
         const QVariantList allyRobots = analyzer.allyRobotList();
         const QVariantList enemyRobots = analyzer.enemyRobotList();
 
-        QCOMPARE(allyRobots.size(), 6);
-        QCOMPARE(enemyRobots.size(), 6);
+        // 2027 规则：英雄与工程合并为唯一重装(1)，每方 5 台。
+        QCOMPARE(allyRobots.size(), 5);
+        QCOMPARE(enemyRobots.size(), 5);
 
         for (const QVariant &entry : allyRobots) {
             const QVariantMap robot = entry.toMap();

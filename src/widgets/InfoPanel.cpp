@@ -21,15 +21,14 @@ InfoPanel::InfoPanel(QWidget *parent) : QWidget(parent) {
     return RobotInfo{id, type, hp, hp, power, heat, cool, fire, true};
   };
 
+  // 2027 规则：英雄与工程合并为唯一重装(1)，阵容为 1、3、4、7。
   m_redTeamData = {
-      initData(1, "英雄", 250, 110, 200, 40, 16),
-      initData(2, "工程", 250, 0, 0, 0, 0),
+      initData(1, "重装", 250, 110, 200, 40, 16),
       initData(3, "步兵", 200, 45, 50, 40, 25),
       initData(4, "步兵", 200, 45, 50, 40, 25), // 4 号沿用步兵类型
       initData(7, "哨兵", 400, 100, 400, 80, 25)};
 
-  m_blueTeamData = {initData(1, "英雄", 300, 65, 260, 56, 16),
-                    initData(2, "工程", 250, 0, 0, 0, 0),
+  m_blueTeamData = {initData(1, "重装", 300, 65, 260, 56, 16),
                     initData(3, "步兵", 250, 55, 120, 50, 25),
                     initData(4, "步兵", 250, 55, 120, 50, 25),
                     initData(7, "哨兵", 400, 100, 400, 80, 25)};

@@ -498,11 +498,10 @@ void RobotStatusWidget::drawRobotIcon(QPainter &painter) {
   case Infantry:
     typeText = "步兵";
     break;
+  // 2027 规则：英雄与工程合并为「重装机器人」。
   case Hero:
-    typeText = "英雄";
-    break;
   case Engineer:
-    typeText = "工程";
+    typeText = "重装";
     break;
   case Drone:
     typeText = "无人机";
@@ -682,10 +681,10 @@ void RobotStatusWidget::drawModuleStatus(QPainter &painter) {
 
 QString RobotStatusWidget::getRobotTypeName() const {
   switch (m_robotType) {
+  // 2027 规则：英雄与工程合并，统一返回 Heavy。
   case Hero:
-    return "Hero";
   case Engineer:
-    return "Engineer";
+    return "Heavy";
   case Infantry:
     return "Infantry";
   case Drone:

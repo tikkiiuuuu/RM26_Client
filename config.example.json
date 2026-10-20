@@ -52,37 +52,26 @@
         "infantry": {
             "description": "步兵机器人配置",
             "ui_layout": "standard",
-            "modules": ["shooter", "gimbal", "chassis"],
+            "modules": [
+                "shooter",
+                "gimbal",
+                "chassis"
+            ],
             "key_bindings": {
                 "shoot": "Space",
                 "boost": "Shift",
                 "reload": "R"
             }
         },
-        "hero": {
-            "description": "英雄机器人配置",
-            "ui_layout": "heavy",
-            "modules": ["shooter_42mm", "gimbal", "chassis"],
-            "key_bindings": {
-                "shoot": "Space",
-                "shield": "E",
-                "reload": "R"
-            }
-        },
-        "engineer": {
-            "description": "工程机器人配置",
-            "ui_layout": "utility",
-            "modules": ["robotic_arm", "chassis"],
-            "key_bindings": {
-                "grab": "G",
-                "lift": "H",
-                "exchange": "X"
-            }
-        },
         "sentry": {
             "description": "哨兵机器人配置",
             "ui_layout": "autonomous",
-            "modules": ["shooter", "gimbal", "chassis", "radar"],
+            "modules": [
+                "shooter",
+                "gimbal",
+                "chassis",
+                "radar"
+            ],
             "key_bindings": {
                 "auto_mode": "F1",
                 "manual_override": "F2"
@@ -91,10 +80,28 @@
         "aerial": {
             "description": "空中机器人配置",
             "ui_layout": "flight",
-            "modules": ["shooter", "gimbal", "flight_ctrl"],
+            "modules": [
+                "shooter",
+                "gimbal",
+                "flight_ctrl"
+            ],
             "key_bindings": {
                 "ascend": "Space",
                 "descend": "Ctrl"
+            }
+        },
+        "heavy": {
+            "description": "重装机器人配置（2027 规则：英雄与工程合并，同时具备装配与 42mm 发射功能）",
+            "ui_layout": "heavy",
+            "modules": [
+                "shooter_42mm",
+                "gimbal",
+                "chassis"
+            ],
+            "key_bindings": {
+                "shoot": "Space",
+                "shield": "E",
+                "reload": "R"
             }
         }
     },

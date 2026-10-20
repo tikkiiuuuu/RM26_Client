@@ -115,11 +115,13 @@ void RobotStatusPanel::paintEvent(QPaintEvent *event) {
     painter.setFont(f);
     QString typeStr = "STD";
     switch (m_robotType) {
+    // 2027 合并后统一使用 HEV 表示重装机器人。
+    case RM::RobotType::Heavy:
     case RM::RobotType::Hero:
-      typeStr = "HERO";
+      typeStr = "HEV";
       break;
     case RM::RobotType::Engineer:
-      typeStr = "ENG";
+      typeStr = "HEV";
       break;
     case RM::RobotType::Sentry:
       typeStr = "SEN";
@@ -218,10 +220,11 @@ QString RobotStatusPanel::getRobotTypeIcon() const {
   switch (m_robotType) {
   case RobotType::Standard:
     return "步";
+  // 2027 合并后重装机器人沿用"重"字符。
+  case RobotType::Heavy:
   case RobotType::Hero:
-    return "英";
   case RobotType::Engineer:
-    return "工";
+    return "重";
   case RobotType::Aerial:
     return "空";
   case RobotType::Sentry:
@@ -245,10 +248,11 @@ QString RobotStatusPanel::getRobotTypeName() const {
   switch (m_robotType) {
   case RobotType::Standard:
     return "步兵";
+  // 2027 合并后的重装机器人。
+  case RobotType::Heavy:
   case RobotType::Hero:
-    return "英雄";
   case RobotType::Engineer:
-    return "工程";
+    return "重装";
   case RobotType::Aerial:
     return "空中";
   case RobotType::Sentry:

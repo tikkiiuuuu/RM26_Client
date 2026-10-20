@@ -291,9 +291,10 @@ AROverlayWidget::createOverlayInfo(const TrackedTarget &target) const {
 
 QString AROverlayWidget::getRobotName(int robotId) const {
   // 根据机器人 ID 生成名称
+  // 2027 规则：1 号槽位为英雄与工程合并后的重装机器人。
   static const QMap<int, QString> names = {
-      {1, "英雄"},   {2, "工程"},    {3, "步兵3"},   {4, "步兵4"},
-      {5, "步兵5"},  {6, "空中"},    {7, "哨兵"},    {101, "英雄"},
+      {1, "重装"},   {2, "工程"},    {3, "步兵3"},   {4, "步兵4"},
+      {5, "步兵5"},  {6, "空中"},    {7, "哨兵"},    {101, "重装"},
       {102, "工程"}, {103, "步兵3"}, {104, "步兵4"}, {105, "步兵5"},
       {106, "空中"}, {107, "哨兵"}};
 

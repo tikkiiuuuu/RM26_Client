@@ -138,11 +138,11 @@ Rectangle {
         }
     }
 
-    // 默认测试数据
+    // 默认测试数据（2027 规则：英雄与工程合并为唯一重装(1)）
     property var defaultRobotData: [
         {
             number: 1,
-            name: "英雄",
+            name: "重装",
             icon: "qrc:/images/robots/red_hero.png",
             currentHP: 220,
             maxHP: 250,
@@ -151,18 +151,6 @@ Rectangle {
             heatCooling: 16,
             shootSpeedLimit: 12,
             level:5
-        },
-        {
-            number: 2,
-            name: "工程",
-            icon: "qrc:/images/robots/red_engineer.png",
-            currentHP: 46,
-            maxHP: 250,
-            chassisPower: 0,
-            heatLimit: 0,
-            heatCooling: 0,
-            shootSpeedLimit: 0,
-            level:6
         },
         {
             number: 3,

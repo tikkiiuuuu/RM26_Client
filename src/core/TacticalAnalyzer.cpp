@@ -26,6 +26,8 @@ QString tacticalRobotIdLabel(int robotId, bool isAlly) {
 
 QString tacticalRobotTypeIcon(RobotType type) {
     switch (type) {
+    // 2027 合并后的重装机器人沿用英雄图标，保持战术页视觉一致。
+    case RobotType::HEAVY:
     case RobotType::HERO:
         return QStringLiteral("hero");
     case RobotType::ENGINEER:
@@ -45,7 +47,7 @@ QString tacticalRobotTypeIcon(RobotType type) {
 RobotType tacticalDefaultTypeForSlot(int slot) {
     switch (slot) {
     case 1:
-        return RobotType::HERO;
+        return RobotType::HEAVY; // 2027 合并后 1 号槽位为重装机器人
     case 2:
         return RobotType::ENGINEER;
     case 6:
@@ -62,10 +64,12 @@ RobotType tacticalDefaultTypeForSlot(int slot) {
 
 QString tacticalRobotTypeLabel(RobotType type, int slot) {
     switch (type) {
+    case RobotType::HEAVY:
+        return QStringLiteral("重装");
     case RobotType::HERO:
-        return QStringLiteral("英雄");
+        return QStringLiteral("重装");
     case RobotType::ENGINEER:
-        return QStringLiteral("工程");
+        return QStringLiteral("重装");
     case RobotType::AERIAL:
         return QStringLiteral("空中");
     case RobotType::SENTRY:
@@ -328,19 +332,13 @@ void TacticalAnalyzer::loadMockData() {
     }
     {
         TargetRankItem t;
-        t.rank = 2; t.id = "E2"; t.label = "敌工程2";
-        t.hp = 310; t.maxHp = 600; t.threat = 0.65; t.icon = "engineer";
-        targets.append(toVariantMap(t));
-    }
-    {
-        TargetRankItem t;
         t.rank = 3; t.id = "E4"; t.label = "敌步兵4";
         t.hp = 220; t.maxHp = 400; t.threat = 0.58; t.icon = "infantry";
         targets.append(toVariantMap(t));
     }
     {
         TargetRankItem t;
-        t.rank = 4; t.id = "E1"; t.label = "敌英雄1";
+        t.rank = 4; t.id = "E1"; t.label = "敌重装1";
         t.hp = 680; t.maxHp = 800; t.threat = 0.45; t.icon = "hero";
         targets.append(toVariantMap(t));
     }
@@ -354,7 +352,6 @@ void TacticalAnalyzer::loadMockData() {
     {
         QVariantList ally;
         ally.append(toVariantMap(MapRobot{"A1", "A1", 0.25, 0.55, 45}));
-        ally.append(toVariantMap(MapRobot{"A2", "A2", 0.32, 0.62, 90}));
         ally.append(toVariantMap(MapRobot{"A3", "A3", 0.28, 0.48, 30}));
         ally.append(toVariantMap(MapRobot{"A4", "A4", 0.22, 0.42, 0}));
         ally.append(toVariantMap(MapRobot{"A6", "A6", 0.38, 0.55, 135}));
@@ -364,7 +361,6 @@ void TacticalAnalyzer::loadMockData() {
     {
         QVariantList enemy;
         enemy.append(toVariantMap(MapRobot{"E1", "E1", 0.60, 0.55, 225}));
-        enemy.append(toVariantMap(MapRobot{"E2", "E2", 0.68, 0.42, 270}));
         enemy.append(toVariantMap(MapRobot{"E3", "E3", 0.55, 0.38, 200}));
         enemy.append(toVariantMap(MapRobot{"E4", "E4", 0.72, 0.60, 240}));
         m_snapshot.radar.enemyRobots = enemy;
@@ -403,12 +399,6 @@ void TacticalAnalyzer::loadMockData() {
     }
     {
         AllyExecutionCard c;
-        c.id = "A2"; c.label = "A2 E"; c.capPct = 60; c.heatPct = 70;
-        c.ammoPct = 40; c.lockedTarget = "-"; c.canFire = false;
-        execs.append(toVariantMap(c));
-    }
-    {
-        AllyExecutionCard c;
         c.id = "A3"; c.label = "A3 I3"; c.capPct = 90; c.heatPct = 20;
         c.ammoPct = 55; c.lockedTarget = "E3"; c.canFire = true;
         execs.append(toVariantMap(c));
@@ -421,18 +411,16 @@ void TacticalAnalyzer::loadMockData() {
     }
     m_snapshot.allyExecution = execs;
 
-    // 2026 阵容没有 5 号步兵，列表保留 1、2、3、4、6、7 号位。
+    // 2027 合并后每方 5 台：重装(1)、步兵(3,4)、空中(6)、哨兵(7)。
     m_snapshot.allyRobotList = QVariantList{
-        QVariantMap{{"id", "A1"}, {"slot", 1}, {"team", "ally"}, {"type", "hero"}, {"label", "英雄"}, {"hp", 2580}, {"maxHp", 4000}, {"hpPct", 65}, {"heatPct", 30}, {"capPct", 85}, {"ammoPct", 70}, {"online", true}, {"alive", true}, {"stale", false}, {"ageMs", 120}},
-        QVariantMap{{"id", "A2"}, {"slot", 2}, {"team", "ally"}, {"type", "engineer"}, {"label", "工程"}, {"hp", 420}, {"maxHp", 500}, {"hpPct", 84}, {"heatPct", -1}, {"capPct", 60}, {"ammoPct", 40}, {"online", true}, {"alive", true}, {"stale", false}, {"ageMs", 160}},
+        QVariantMap{{"id", "A1"}, {"slot", 1}, {"team", "ally"}, {"type", "hero"}, {"label", "重装"}, {"hp", 2580}, {"maxHp", 4000}, {"hpPct", 65}, {"heatPct", 30}, {"capPct", 85}, {"ammoPct", 70}, {"online", true}, {"alive", true}, {"stale", false}, {"ageMs", 120}},
         QVariantMap{{"id", "A3"}, {"slot", 3}, {"team", "ally"}, {"type", "infantry"}, {"label", "步兵3"}, {"hp", 320}, {"maxHp", 400}, {"hpPct", 80}, {"heatPct", 20}, {"capPct", 90}, {"ammoPct", 55}, {"online", true}, {"alive", true}, {"stale", false}, {"ageMs", 140}},
         QVariantMap{{"id", "A4"}, {"slot", 4}, {"team", "ally"}, {"type", "infantry"}, {"label", "步兵4"}, {"hp", 0}, {"maxHp", 400}, {"hpPct", 0}, {"heatPct", -1}, {"capPct", -1}, {"ammoPct", -1}, {"online", false}, {"alive", false}, {"stale", true}, {"ageMs", 999999}},
         QVariantMap{{"id", "A6"}, {"slot", 6}, {"team", "ally"}, {"type", "aerial"}, {"label", "空中"}, {"hp", 210}, {"maxHp", 300}, {"hpPct", 70}, {"heatPct", -1}, {"capPct", -1}, {"ammoPct", 80}, {"online", true}, {"alive", true}, {"stale", false}, {"ageMs", 210}},
         QVariantMap{{"id", "A7"}, {"slot", 7}, {"team", "ally"}, {"type", "sentry"}, {"label", "哨兵"}, {"hp", 560}, {"maxHp", 600}, {"hpPct", 93}, {"heatPct", 0}, {"capPct", 100}, {"ammoPct", 80}, {"online", true}, {"alive", true}, {"stale", false}, {"ageMs", 170}}
     };
     m_snapshot.enemyRobotList = QVariantList{
-        QVariantMap{{"id", "E1"}, {"slot", 1}, {"team", "enemy"}, {"type", "hero"}, {"label", "敌英雄"}, {"hp", 680}, {"maxHp", 800}, {"hpPct", 85}, {"heatPct", -1}, {"capPct", -1}, {"ammoPct", -1}, {"online", true}, {"alive", true}, {"stale", false}, {"ageMs", 180}},
-        QVariantMap{{"id", "E2"}, {"slot", 2}, {"team", "enemy"}, {"type", "engineer"}, {"label", "敌工程"}, {"hp", 310}, {"maxHp", 600}, {"hpPct", 52}, {"heatPct", -1}, {"capPct", -1}, {"ammoPct", -1}, {"online", true}, {"alive", true}, {"stale", false}, {"ageMs", 180}},
+        QVariantMap{{"id", "E1"}, {"slot", 1}, {"team", "enemy"}, {"type", "hero"}, {"label", "敌重装"}, {"hp", 680}, {"maxHp", 800}, {"hpPct", 85}, {"heatPct", -1}, {"capPct", -1}, {"ammoPct", -1}, {"online", true}, {"alive", true}, {"stale", false}, {"ageMs", 180}},
         QVariantMap{{"id", "E3"}, {"slot", 3}, {"team", "enemy"}, {"type", "infantry"}, {"label", "敌步兵3"}, {"hp", 84}, {"maxHp", 400}, {"hpPct", 21}, {"heatPct", -1}, {"capPct", -1}, {"ammoPct", -1}, {"online", true}, {"alive", true}, {"stale", false}, {"ageMs", 120}},
         QVariantMap{{"id", "E4"}, {"slot", 4}, {"team", "enemy"}, {"type", "infantry"}, {"label", "敌步兵4"}, {"hp", 220}, {"maxHp", 400}, {"hpPct", 55}, {"heatPct", -1}, {"capPct", -1}, {"ammoPct", -1}, {"online", true}, {"alive", true}, {"stale", false}, {"ageMs", 250}},
         QVariantMap{{"id", "E6"}, {"slot", 6}, {"team", "enemy"}, {"type", "aerial"}, {"label", "敌空中"}, {"hp", 0}, {"maxHp", 300}, {"hpPct", 0}, {"heatPct", -1}, {"capPct", -1}, {"ammoPct", -1}, {"online", false}, {"alive", false}, {"stale", true}, {"ageMs", 999999}},
@@ -1007,7 +995,9 @@ void TacticalAnalyzer::updateRobotLists() {
         m_robotFlashStateRound = currentRound;
     }
     const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
-    const QList<int> visibleSlots{1, 2, 3, 4, 6, 7};
+    // 2027 规则：英雄与工程合并为唯一重装(1)，战术页每方 5 台。
+    // 这里只影响 UI 展示；协议解析的 6 字段顺序不受影响。
+    const QList<int> visibleSlots{1, 3, 4, 6, 7};
 
     auto buildList = [&](bool redTeam, bool ally) {
         QVariantList list;

@@ -46,17 +46,20 @@ enum class PacketType : quint8 {
 /**
  * @enum RobotType
  * @brief 机器人类型枚举
+ * @details 槽位编号由规则定义，不得改动。2027 规则下英雄(1)与工程(2)合并为
+ *          「重装机器人」：两个槽位都保留（功能也都有），仅展示名称统一改为重装。
  */
 enum class RobotType : quint8 {
-  HERO = 1,       // 英雄
-  ENGINEER = 2,   // 工程
+  HERO = 1,       // 重装机器人（槽位 1）
+  ENGINEER = 2,   // 工程（已被重装吸收；槽位保留供旧数据）
   INFANTRY_3 = 3, // 步兵3号
   INFANTRY_4 = 4, // 步兵4号
   INFANTRY_5 = 5, // 步兵5号
   AERIAL = 6,     // 空中机器人
   SENTRY = 7,     // 哨兵
   DART = 8,       // 飞镖
-  RADAR = 9       // 雷达站
+  RADAR = 9,      // 雷达站
+  HEAVY = 10      // 重装机器人（UI 语义类型，英雄与工程合并后的唯一类型）
 };
 
 /**

@@ -335,7 +335,7 @@ Item {
                     anchors.topMargin: 2
                     spacing: 8
 
-                // 1. 机器人列表
+                // 1. 机器人列表（2027 规则：英雄与工程合并为唯一重装，号位 1）
                 RowLayout {
                     spacing: 2
                     RobotStatusItem {
@@ -353,10 +353,6 @@ Item {
                     RobotStatusItem {
                         robotId: 3
                         avatarSource: "qrc:/images/top_robots/red_teammate_avatar_soldier.png"
-                    }
-                    RobotStatusItem {
-                        robotId: 2
-                        avatarSource: "qrc:/images/top_robots/red_teammate_avatar_engineer.png"
                     }
                     RobotStatusItem {
                         robotId: 1
@@ -620,17 +616,12 @@ Item {
                     }
                 }
 
-                // 1. 机器人列表
+                // 1. 机器人列表（2027 规则：英雄与工程合并为唯一重装，号位 101）
                 RowLayout {
                     spacing: 2
                     RobotStatusItem {
                         robotId: 101
                         avatarSource: "qrc:/images/top_robots/blue_teammate_avatar_hero.png"
-                        isBlue: true
-                    }
-                    RobotStatusItem {
-                        robotId: 102
-                        avatarSource: "qrc:/images/top_robots/blue_teammate_avatar_engineer.png"
                         isBlue: true
                     }
                     RobotStatusItem {

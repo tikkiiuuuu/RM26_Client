@@ -174,10 +174,12 @@ struct Fonts {
 };
 
 // 机器人角色类型
+// 2027 规则：英雄与工程合并为唯一的「重装机器人」（号位 1）。
 enum class RobotType {
   Standard, // 步兵
-  Hero,     // 英雄
-  Engineer, // 工程
+  Heavy,    // 重装（英雄 + 工程合并后的唯一类型）
+  Hero,     // 英雄（历史保留，界面已不用）
+  Engineer, // 工程（历史保留，界面已不用）
   Aerial,   // 空中
   Sentry,   // 哨兵
   Dart,     // 飞镖

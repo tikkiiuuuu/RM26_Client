@@ -22,7 +22,7 @@ Rectangle {
     // 机器人属性
     property color teamColor: "#E74C3C"
     property int robotNumber: 1
-    property string robotName: "英雄"
+    property string robotName: "重装"
     property string robotIcon: ""
     property int currentHP: 200
     property int maxHP: 600

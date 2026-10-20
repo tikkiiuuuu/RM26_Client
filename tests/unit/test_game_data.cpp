@@ -41,10 +41,16 @@ private slots:
 
     // 验证默认机器人数量
     QCOMPARE(gameData.getAllRobots().size(),
-             12); // 每方初始化 6 台可见机器人（1、2、3、4、6、7）；
-                  // 当前客户端界面不显示 5/105。
+             10); // 每方 5 台（1、3、4、6、7）；2/102 已被重装吸收。
+    QVERIFY(gameData.getRobotById(2) == nullptr);
+    QVERIFY(gameData.getRobotById(102) == nullptr);
     QVERIFY(gameData.getRobotById(5) == nullptr);
     QVERIFY(gameData.getRobotById(105) == nullptr);
+
+    // 1 号槽位在 2027 规则下为合并后的重装机器人。
+    const RobotData *heavy = gameData.getRobotById(1);
+    QVERIFY(heavy != nullptr);
+    QCOMPARE(heavy->type, RobotType::HEAVY);
 
     // 验证默认比赛阶段
     QCOMPARE(gameData.getCurrentStage(), GameStage::NOT_STARTED);

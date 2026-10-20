@@ -143,8 +143,9 @@ int normalizedRobotIdFromSelection(const QString &robotType) {
 
 QString settingsRobotTypeLabelForNormalizedId(int robotId) {
   switch (robotId) {
+  // 2027 规则：英雄与工程合并为唯一的「重装机器人」，占用 1 号；2 号不再单列。
   case 1:
-    return QStringLiteral("R1 - Hero");
+    return QStringLiteral("R1 - Heavy");
   case 2:
     return QStringLiteral("R2 - Engineer");
   case 3:
@@ -158,7 +159,7 @@ QString settingsRobotTypeLabelForNormalizedId(int robotId) {
   case 7:
     return QStringLiteral("R7 - Sentry");
   default:
-    return QStringLiteral("R1 - Hero");
+    return QStringLiteral("R1 - Heavy");
   }
 }
 
@@ -213,10 +214,10 @@ bool isTacticalLayoutSwitchShortcut(const QKeyEvent *event) {
 
 static RobotType toUiRobotType(::RobotType t) {
   switch (t) {
+  // 2027 规则：英雄(1) 与工程(2) 合并为唯一的「重装机器人」。
   case ::RobotType::HERO:
-    return RobotType::Hero;
   case ::RobotType::ENGINEER:
-    return RobotType::Engineer;
+    return RobotType::Heavy;
   case ::RobotType::AERIAL:
     return RobotType::Aerial;
   case ::RobotType::SENTRY:
@@ -905,6 +906,8 @@ void MainWindow::setupConnections() {
   });
   connect(m_gameData, &GameData::myRobotUpdated, this, [this]() {
     updateCurrentRobotPanel();
+    // 42mm 发射机构解锁状态变化时，重装的兑换/装配面板需要动态切换。
+    refreshExchangePanelAvailability();
     updateExchangeHintText(m_exchangeQmlSource);
     syncSettingsPanelState();
   });
@@ -4721,7 +4724,7 @@ bool MainWindow::shouldShowDeployModePanel() const {
 
   const bool isHeroSelected =
       baseRobotIdFromSettingsType(m_selectedRobotTypeFromSettings) == 1 ||
-      m_selectedRobotTypeFromSettings.contains("Hero", Qt::CaseInsensitive);
+      m_selectedRobotTypeFromSettings.contains("Heavy", Qt::CaseInsensitive);
   return isHeroSelected;
 }
 
@@ -4946,36 +4949,19 @@ void MainWindow::applySettingsRobotSelection(const QString &robotType,
   }
 
   m_selectedRobotTypeFromSettings = robotType;
-  const int baseRobotId = baseRobotIdFromSettingsType(robotType);
-  QString nextExchangeQmlSource;
-  if (baseRobotId == 2) {
-    nextExchangeQmlSource = "qrc:/qml/ExchangePanelEngineer.qml";
-  } else if (baseRobotId == 6) {
-    nextExchangeQmlSource = "qrc:/qml/ExchangePanelAerial.qml";
-  } else {
-    nextExchangeQmlSource = "qrc:/qml/ExchangePanel.qml";
-  }
+  refreshExchangePanelMode(true);
 
-  const bool exchangePanelSourceChanged = (m_exchangeQmlSource != nextExchangeQmlSource);
-  m_exchangeQmlSource = nextExchangeQmlSource;
-
-  if (m_qmlExchangePanel) {
-    if (exchangePanelSourceChanged) {
-      m_qmlExchangePanel->setSource(QUrl(m_exchangeQmlSource));
-    }
-    if (m_qmlExchangePanel->rootObject()) {
-      QObject *rootObj = m_qmlExchangePanel->rootObject();
-      rootObj->setProperty("selectedRobotType", robotType);
-      connectIfQmlSignalExists(rootObj, "commonCommandRequested(int,int)",
-                               this,
-                               "onCommonCommandRequested(int,int)");
-      connectIfQmlSignalExists(rootObj, "exchangeRequested(int)", this,
-                               "onExchangeRequested(int)");
-      connectIfQmlSignalExists(rootObj, "exchangeValue(int,int)", this,
-                               "onEngineerExchangeValue(int,int)");
-      connectIfQmlSignalExists(rootObj, "ammoExchangeSucceeded(int)", this,
-                               "onEngineerAmmoExchangeSucceeded(int)");
-    }
+  if (m_qmlExchangePanel && m_qmlExchangePanel->rootObject()) {
+    QObject *rootObj = m_qmlExchangePanel->rootObject();
+    rootObj->setProperty("selectedRobotType", robotType);
+    connectIfQmlSignalExists(rootObj, "commonCommandRequested(int,int)", this,
+                             "onCommonCommandRequested(int,int)");
+    connectIfQmlSignalExists(rootObj, "exchangeRequested(int)", this,
+                             "onExchangeRequested(int)");
+    connectIfQmlSignalExists(rootObj, "exchangeValue(int,int)", this,
+                             "onEngineerExchangeValue(int,int)");
+    connectIfQmlSignalExists(rootObj, "ammoExchangeSucceeded(int)", this,
+                             "onEngineerAmmoExchangeSucceeded(int)");
   }
 
   updateSiloPanelVisibility();
@@ -4983,6 +4969,73 @@ void MainWindow::applySettingsRobotSelection(const QString &robotType,
   updateCurrentRobotPanel();
   updateExchangeHintText(robotType);
   syncSettingsPanelState();
+}
+
+// 2027 规则：英雄与工程合并为重装(1)。重装同时具备装配与 42mm 发射两套功能，
+// 按裁判系统下发的 42mm 发射机构解锁状态选择面板：
+//   未解锁（allowedAmmo42mm == 0）-> 工程装配页 ExchangePanelEngineer.qml
+//   已解锁（allowedAmmo42mm > 0） -> 普通兑换页 ExchangePanel.qml
+// 空中机器人始终使用自己的兑换页；其他兵种使用普通兑换页。
+bool MainWindow::shouldUseEngineerExchangePanel() const {
+  if (!m_gameData) {
+    return false;
+  }
+
+  const int baseRobotId = baseRobotIdFromSettingsType(m_selectedRobotTypeFromSettings);
+  if (baseRobotId == 6) {
+    return false; // 空中机器人
+  }
+
+  // 仅 1 号「重装」存在装配阶段；其他兵种无 42mm 发射机构。
+  const bool isHeavy = (baseRobotId == 1);
+  if (!isHeavy) {
+    return false;
+  }
+
+  const RobotData *robot = m_gameData->getCurrentRobot();
+  if (!robot) {
+    return true; // 尚未收到数据时默认按装配阶段（未解锁）展示
+  }
+  const bool launcherUnlocked = robot->allowedAmmo42mm > 0;
+  return !launcherUnlocked;
+}
+
+void MainWindow::refreshExchangePanelMode(bool forceReload) {
+  const int baseRobotId = baseRobotIdFromSettingsType(m_selectedRobotTypeFromSettings);
+
+  QString nextExchangeQmlSource;
+  if (baseRobotId == 6) {
+    nextExchangeQmlSource = QStringLiteral("qrc:/qml/ExchangePanelAerial.qml");
+  } else if (shouldUseEngineerExchangePanel()) {
+    nextExchangeQmlSource = QStringLiteral("qrc:/qml/ExchangePanelEngineer.qml");
+  } else {
+    nextExchangeQmlSource = QStringLiteral("qrc:/qml/ExchangePanel.qml");
+  }
+
+  const bool changed = (m_exchangeQmlSource != nextExchangeQmlSource);
+  if (!changed && !forceReload) {
+    return;
+  }
+
+  m_exchangeQmlSource = nextExchangeQmlSource;
+  if (m_qmlExchangePanel && changed) {
+    m_qmlExchangePanel->setSource(QUrl(m_exchangeQmlSource));
+  }
+
+  // 42mm 解锁切换会改变面板类型，需同步 H 键提示文案与可用状态。
+  updateExchangeHintText(m_selectedRobotTypeFromSettings);
+}
+
+void MainWindow::refreshExchangePanelAvailability() {
+  if (m_tacticalMode) {
+    return;
+  }
+  // 面板正在显示时不要中途换源，避免打断进行中的装配/兑换交互；
+  // 关闭后再按最新的 42mm 解锁状态选择面板。
+  if (m_qmlExchangePanel && m_qmlExchangePanel->isVisible()) {
+    return;
+  }
+  refreshExchangePanelMode(false);
 }
 
 void MainWindow::toggleLargeMiniMap() {

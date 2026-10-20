@@ -69,16 +69,14 @@ QtObject {
 
     property var topTargets: ([
         { rank: 1, id: "E3", label: "敌步兵3", hp: 84, maxHp: 400, threat: 0.92, icon: "infantry" },
-        { rank: 2, id: "E2", label: "敌工程2", hp: 310, maxHp: 600, threat: 0.65, icon: "engineer" },
-        { rank: 3, id: "E4", label: "敌步兵4", hp: 220, maxHp: 400, threat: 0.58, icon: "infantry" },
-        { rank: 4, id: "E1", label: "敌英雄1", hp: 680, maxHp: 800, threat: 0.45, icon: "hero" }
+        { rank: 2, id: "E4", label: "敌步兵4", hp: 220, maxHp: 400, threat: 0.58, icon: "infantry" },
+        { rank: 3, id: "E1", label: "敌重装1", hp: 680, maxHp: 800, threat: 0.45, icon: "hero" }
     ])
 
     property var radarData: ({
         radarAgeMs: 118,
         allyRobots: [
             { id: "A1", label: "A1", x: 0.25, y: 0.55, angle: 45 },
-            { id: "A2", label: "A2", x: 0.32, y: 0.62, angle: 90 },
             { id: "A3", label: "A3", x: 0.28, y: 0.48, angle: 30 },
             { id: "A4", label: "A4", x: 0.22, y: 0.42, angle: 0 },
             { id: "A6", label: "A6", x: 0.38, y: 0.55, angle: 135 },
@@ -86,7 +84,6 @@ QtObject {
         ],
         enemyRobots: [
             { id: "E1", label: "E1", x: 0.60, y: 0.55, angle: 225 },
-            { id: "E2", label: "E2", x: 0.68, y: 0.42, angle: 270 },
             { id: "E3", label: "E3", x: 0.55, y: 0.38, angle: 200 },
             { id: "E4", label: "E4", x: 0.72, y: 0.60, angle: 240 }
         ],
@@ -100,8 +97,7 @@ QtObject {
     property var mapData: radarData
 
     property var allyRobotList: ([
-        { id: "A1", slot: 1, team: "ally", type: "hero", label: "英雄", hp: 2580, maxHp: 4000, hpPct: 65, heatPct: 30, capPct: 85, ammoPct: 70, online: true, alive: true, stale: false, ageMs: 120 },
-        { id: "A2", slot: 2, team: "ally", type: "engineer", label: "工程", hp: 420, maxHp: 500, hpPct: 84, heatPct: -1, capPct: 60, ammoPct: 40, online: true, alive: true, stale: false, ageMs: 160 },
+        { id: "A1", slot: 1, team: "ally", type: "hero", label: "重装", hp: 2580, maxHp: 4000, hpPct: 65, heatPct: 30, capPct: 85, ammoPct: 70, online: true, alive: true, stale: false, ageMs: 120 },
         { id: "A3", slot: 3, team: "ally", type: "infantry", label: "步兵3", hp: 320, maxHp: 400, hpPct: 80, heatPct: 20, capPct: 90, ammoPct: 55, online: true, alive: true, stale: false, ageMs: 140 },
         { id: "A4", slot: 4, team: "ally", type: "infantry", label: "步兵4", hp: 0, maxHp: 400, hpPct: 0, heatPct: -1, capPct: -1, ammoPct: -1, online: false, alive: false, stale: true, ageMs: 999999 },
         { id: "A6", slot: 6, team: "ally", type: "aerial", label: "空中", hp: 210, maxHp: 300, hpPct: 70, heatPct: -1, capPct: -1, ammoPct: 80, online: true, alive: true, stale: false, ageMs: 210 },
@@ -109,8 +105,7 @@ QtObject {
     ])
 
     property var enemyRobotList: ([
-        { id: "E1", slot: 1, team: "enemy", type: "hero", label: "敌英雄", hp: 680, maxHp: 800, hpPct: 85, heatPct: -1, capPct: -1, ammoPct: -1, online: true, alive: true, stale: false, ageMs: 180 },
-        { id: "E2", slot: 2, team: "enemy", type: "engineer", label: "敌工程", hp: 310, maxHp: 600, hpPct: 52, heatPct: -1, capPct: -1, ammoPct: -1, online: true, alive: true, stale: false, ageMs: 180 },
+        { id: "E1", slot: 1, team: "enemy", type: "hero", label: "敌重装", hp: 680, maxHp: 800, hpPct: 85, heatPct: -1, capPct: -1, ammoPct: -1, online: true, alive: true, stale: false, ageMs: 180 },
         { id: "E3", slot: 3, team: "enemy", type: "infantry", label: "敌步兵3", hp: 84, maxHp: 400, hpPct: 21, heatPct: -1, capPct: -1, ammoPct: -1, online: true, alive: true, stale: false, ageMs: 120 },
         { id: "E4", slot: 4, team: "enemy", type: "infantry", label: "敌步兵4", hp: 220, maxHp: 400, hpPct: 55, heatPct: -1, capPct: -1, ammoPct: -1, online: true, alive: true, stale: false, ageMs: 250 },
         { id: "E6", slot: 6, team: "enemy", type: "aerial", label: "敌空中", hp: 0, maxHp: 300, hpPct: 0, heatPct: -1, capPct: -1, ammoPct: -1, online: false, alive: false, stale: true, ageMs: 999999 },
@@ -149,7 +144,6 @@ QtObject {
 
     property var allyExecution: ([
         { id: "A1", label: "A1 H", capPct: 85, heatPct: 30, ammoPct: 70, lockedTarget: "E3", canFire: true },
-        { id: "A2", label: "A2 E", capPct: 60, heatPct: 70, ammoPct: 40, lockedTarget: "-", canFire: false },
         { id: "A3", label: "A3 I3", capPct: 90, heatPct: 20, ammoPct: 55, lockedTarget: "E3", canFire: true },
         { id: "A7", label: "A7 S", capPct: 100, heatPct: 0, ammoPct: 80, lockedTarget: "-", canFire: false }
     ])

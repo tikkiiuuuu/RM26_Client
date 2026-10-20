@@ -36,6 +36,7 @@ Item {
     property int displayRobotId: robotId % 100
     property string robotType:{
         switch(displayRobotId){
+        // 2027 合并后 1 号槽位为重装机器人，沿用英雄头像资源。
         case 1:
             return "hero";
         case 2:

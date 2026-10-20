@@ -28,11 +28,12 @@ private slots:
     QVERIFY2(panel, qPrintable(component.errorString()));
 
     const QStringList robotTypes{
-        QStringLiteral("R1 - Hero"),     QStringLiteral("R2 - Engineer"),
-        QStringLiteral("R3 - Standard"), QStringLiteral("R4 - Standard"),
-        QStringLiteral("R6 - Aerial"),   QStringLiteral("B1 - Hero"),
-        QStringLiteral("B2 - Engineer"), QStringLiteral("B3 - Standard"),
-        QStringLiteral("B4 - Standard"), QStringLiteral("B6 - Aerial"),
+        // 2027 规则：英雄与工程合并为唯一重装(R1/B1)，每方 5 台。
+        QStringLiteral("R1 - Heavy"),    QStringLiteral("R3 - Standard"),
+        QStringLiteral("R4 - Standard"), QStringLiteral("R6 - Aerial"),
+        QStringLiteral("R7 - Sentry"),   QStringLiteral("B1 - Heavy"),
+        QStringLiteral("B3 - Standard"), QStringLiteral("B4 - Standard"),
+        QStringLiteral("B6 - Aerial"),   QStringLiteral("B7 - Sentry"),
     };
 
     for (const QString &robotType : robotTypes) {
@@ -57,7 +58,8 @@ private slots:
     QVERIFY(QMetaObject::invokeMethod(
         panel.data(), "selectRobotByShortcut",
         Q_RETURN_ARG(QVariant, invalidHandled),
-        Q_ARG(QVariant, QVariant(QStringLiteral("B7 - Sentry")))));
+        // 2027 合并后 2 号已不在可选列表中，用它验证无效输入被拒绝。
+        Q_ARG(QVariant, QVariant(QStringLiteral("R2 - Engineer")))));
     QVERIFY(!invalidHandled.toBool());
     QCOMPARE(panel->property("currentRobotSelection").toString(),
              selectionBeforeInvalid);
@@ -126,7 +128,7 @@ private slots:
     QVariant handled;
     QVERIFY(QMetaObject::invokeMethod(
         panel.data(), "selectRobotByShortcut", Q_RETURN_ARG(QVariant, handled),
-        Q_ARG(QVariant, QVariant(QStringLiteral("R1 - Hero")))));
+        Q_ARG(QVariant, QVariant(QStringLiteral("R1 - Heavy")))));
     QVERIFY(handled.toBool());
     QVERIFY(panel->property("robotShortcutPending").toBool());
 
